@@ -1,10 +1,30 @@
 "use server"
 
-import { db } from "@/lib/db"
+import { db, pool } from "@/lib/db"
 import { customers, customerPurchases } from "@/lib/db/schema"
 import { requireEnabledUser } from "@/lib/session"
 import { and, desc, eq, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+
+// Le prende (o apaga) el permiso de fiado en la cuenta de la tienda
+// online, buscando al usuario por email. Si esa persona todavía no
+// tiene cuenta en la tienda, no hace nada (no es un error: puede que
+// solo compre de forma presencial, o que se registre más adelante).
+async function syncTiendaCanFiar(email: string, enabled: boolean) {
+  try {
+    const { rows } = await pool.query(
+      `select id from auth.users where lower(email) = lower($1) limit 1`,
+      [email],
+    )
+    const userId = rows[0]?.id
+    if (!userId) return
+    await pool.query(`update public.profiles set can_fiar = $2 where id = $1`, [userId, enabled])
+  } catch (err) {
+    // Si por lo que sea no se puede sincronizar (falta la tabla, permisos,
+    // etc.), no rompemos el alta del cliente en el cuaderno — solo lo avisamos.
+    console.error("No se pudo sincronizar can_fiar con la tienda:", err)
+  }
+}
 
 export type CustomerWithBalance = {
   id: number
@@ -66,6 +86,10 @@ export async function addCustomer(formData: {
     note: formData.note?.trim() || null,
     createdByUserId: currentUser.id,
   })
+
+  const email = formData.email?.trim().toLowerCase()
+  if (email) await syncTiendaCanFiar(email, true)
+
   revalidatePath("/")
 }
 
@@ -125,7 +149,9 @@ export async function deletePurchase(id: number) {
 
 export async function deleteCustomer(id: number) {
   await requireEnabledUser()
+  const [existing] = await db.select({ email: customers.email }).from(customers).where(eq(customers.id, id))
   await db.delete(customerPurchases).where(eq(customerPurchases.customerId, id))
   await db.delete(customers).where(eq(customers.id, id))
+  if (existing?.email) await syncTiendaCanFiar(existing.email, false)
   revalidatePath("/")
 }
