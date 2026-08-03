@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { SupplierWithBalance } from "@/app/actions/suppliers"
 import { formatMoney } from "@/lib/format"
@@ -17,6 +17,11 @@ export function SuppliersSection({
 }) {
   const router = useRouter()
   const [query, setQuery] = useState("")
+
+  useEffect(() => {
+    const interval = setInterval(() => router.refresh(), 6000)
+    return () => clearInterval(interval)
+  }, [router])
 
   const totalToPay = useMemo(
     () => initialSuppliers.reduce((sum, s) => sum + s.toPay, 0),

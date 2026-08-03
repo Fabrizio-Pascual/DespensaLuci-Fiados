@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { CustomerWithBalance } from "@/app/actions/customers"
 import { formatMoney } from "@/lib/format"
@@ -17,6 +17,14 @@ export function CustomersSection({
 }) {
   const router = useRouter()
   const [query, setQuery] = useState("")
+
+  // Como puede haber más de un empleado usando esto al mismo tiempo,
+  // refrescamos los datos solos cada pocos segundos (sin que haga falta
+  // recargar la página a mano) para que todos vean lo mismo.
+  useEffect(() => {
+    const interval = setInterval(() => router.refresh(), 6000)
+    return () => clearInterval(interval)
+  }, [router])
 
   const totalDebt = useMemo(
     () => initialCustomers.reduce((sum, c) => sum + c.balance, 0),
