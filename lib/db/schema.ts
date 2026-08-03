@@ -93,6 +93,10 @@ export const customerPurchases = pgTable("fiados_customer_purchases", {
   createdByUserId: text("createdByUserId").notNull(),
   createdByName: text("createdByName"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+  // Si esta compra vino de un pedido online de la tienda, acá queda el
+  // id de ese pedido — así, si se cancela en la tienda, se puede borrar
+  // esta anotación automáticamente.
+  storeOrderId: text("storeOrderId"),
 })
 
 export const suppliers = pgTable("fiados_suppliers", {
