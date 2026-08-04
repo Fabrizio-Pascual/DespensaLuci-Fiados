@@ -1,15 +1,15 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Nunito, Fraunces } from 'next/font/google'
+import { Inter, Playfair_Display } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
-const nunito = Nunito({
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-nunito',
 })
 
-const fraunces = Fraunces({
+const playfair = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-fraunces',
 })
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#7a8450',
+  themeColor: '#2f5fb3',
 }
 
 export default function RootLayout({
@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className={`${nunito.variable} ${fraunces.variable} bg-background`}>
+    <html lang="es" className={`${inter.variable} ${playfair.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
         <Toaster richColors position="top-center" />
