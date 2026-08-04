@@ -29,6 +29,8 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
+import { FileText } from "lucide-react"
 
 type Purchase = {
   id: number
@@ -254,6 +256,25 @@ export function CustomerCard({
           </form>
 
           <Separator className="my-4" />
+
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">Historial</p>
+              {purchases && purchases.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  Histórico fiado: {formatMoney(purchases.reduce((s, p) => s + Number(p.amount), 0))}
+                  {" · "}
+                  Pagado: {formatMoney(purchases.filter(p => p.paid).reduce((s, p) => s + Number(p.amount), 0))}
+                </p>
+              )}
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/clientes/${customer.id}/estado-cuenta`} target="_blank">
+                <FileText className="h-3.5 w-3.5" />
+                Estado de cuenta
+              </Link>
+            </Button>
+          </div>
 
           {/* Purchase history */}
           {loadingList ? (

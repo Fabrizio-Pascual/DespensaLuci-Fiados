@@ -8,6 +8,7 @@ import {
   addOrder,
   setOrderStatus,
   toggleOrderPaid,
+  toggleOrderUrgent,
   deleteOrder,
   deleteSupplier,
 } from "@/app/actions/suppliers"
@@ -25,6 +26,7 @@ import {
   Check,
   Loader2,
   Trash2,
+  AlertTriangle,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -36,6 +38,7 @@ type Order = {
   cost: string
   amountToPay: string
   status: string
+  urgent: boolean
   paid: boolean
   paidAt: Date | null
   createdByUserId: string
@@ -143,6 +146,17 @@ export function SupplierCard({
     })
   }
 
+  function handleToggleUrgent(order: Order) {
+    startTransition(async () => {
+      try {
+        await toggleOrderUrgent(order.id, !order.urgent)
+        refreshAll()
+      } catch {
+        toast.error("No se pudo marcar como urgente.")
+      }
+    })
+  }
+
   function handleDeleteOrder(id: number) {
     startTransition(async () => {
       try {
@@ -189,6 +203,12 @@ export function SupplierCard({
             </span>
             {supplier.phone && (
               <Phone className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+            )}
+            {supplier.urgentOrders > 0 && (
+              <Badge variant="destructive" className="gap-1 text-[10px]">
+                <AlertTriangle className="h-3 w-3" />
+                Urgente
+              </Badge>
             )}
           </div>
           <p className="truncate text-xs text-muted-foreground">
@@ -291,11 +311,17 @@ export function SupplierCard({
               {orders.map((o) => (
                 <li
                   key={o.id}
-                  className="flex flex-col gap-2 rounded-lg border border-border bg-card px-3 py-2.5"
+                  className={cn(
+                    "flex flex-col gap-2 rounded-lg border bg-card px-3 py-2.5",
+                    o.urgent ? "border-destructive/50 bg-destructive/5" : "border-border",
+                  )}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground text-pretty">
+                      <p className="flex items-center gap-1.5 text-sm font-medium text-foreground text-pretty">
+                        {o.urgent && (
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" />
+                        )}
                         {o.items}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
@@ -303,17 +329,35 @@ export function SupplierCard({
                         {o.createdByName ? ` · ${o.createdByName}` : ""}
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDeleteOrder(o.id)}
-                      disabled={isPending}
-                      aria-label="Borrar pedido"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7",
+                          o.urgent
+                            ? "text-destructive hover:text-destructive"
+                            : "text-muted-foreground hover:text-destructive",
+                        )}
+                        onClick={() => handleToggleUrgent(o)}
+                        disabled={isPending}
+                        aria-label={o.urgent ? "Quitar urgente" : "Marcar urgente"}
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteOrder(o.id)}
+                        disabled={isPending}
+                        aria-label="Borrar pedido"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">

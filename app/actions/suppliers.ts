@@ -13,6 +13,7 @@ export type SupplierWithBalance = {
   note: string | null
   toPay: number
   pendingOrders: number
+  urgentOrders: number
 }
 
 export async function getSuppliers(): Promise<SupplierWithBalance[]> {
@@ -25,6 +26,7 @@ export async function getSuppliers(): Promise<SupplierWithBalance[]> {
       note: suppliers.note,
       toPay: sql<string>`COALESCE(SUM(CASE WHEN ${supplierOrders.paid} = false THEN ${supplierOrders.amountToPay} ELSE 0 END), 0)`,
       pendingOrders: sql<number>`COUNT(CASE WHEN ${supplierOrders.status} <> 'recibido' THEN 1 END)::int`,
+      urgentOrders: sql<number>`COUNT(CASE WHEN ${supplierOrders.urgent} = true AND ${supplierOrders.status} <> 'recibido' THEN 1 END)::int`,
     })
     .from(suppliers)
     .leftJoin(supplierOrders, eq(supplierOrders.supplierId, suppliers.id))
@@ -35,6 +37,7 @@ export async function getSuppliers(): Promise<SupplierWithBalance[]> {
     ...r,
     toPay: Number(r.toPay),
     pendingOrders: Number(r.pendingOrders),
+    urgentOrders: Number(r.urgentOrders),
   }))
 }
 
@@ -44,7 +47,7 @@ export async function getSupplierOrders(supplierId: number) {
     .select()
     .from(supplierOrders)
     .where(eq(supplierOrders.supplierId, supplierId))
-    .orderBy(desc(supplierOrders.createdAt))
+    .orderBy(desc(supplierOrders.urgent), desc(supplierOrders.createdAt))
 }
 
 export async function addSupplier(formData: {
@@ -105,6 +108,12 @@ export async function toggleOrderPaid(id: number, paid: boolean) {
     .update(supplierOrders)
     .set({ paid, paidAt: paid ? new Date() : null })
     .where(eq(supplierOrders.id, id))
+  revalidatePath("/")
+}
+
+export async function toggleOrderUrgent(id: number, urgent: boolean) {
+  await requireEnabledUser()
+  await db.update(supplierOrders).set({ urgent }).where(eq(supplierOrders.id, id))
   revalidatePath("/")
 }
 

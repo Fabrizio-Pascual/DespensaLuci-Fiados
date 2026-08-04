@@ -8,6 +8,9 @@
 alter table public.fiados_customer_purchases
   add column if not exists "storeOrderId" text;
 
+alter table public.fiados_supplier_orders
+  add column if not exists urgent boolean not null default false;
+
 create or replace function public.fiado_record_purchase(
   p_email text,
   p_description text,

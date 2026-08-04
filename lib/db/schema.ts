@@ -117,6 +117,7 @@ export const supplierOrders = pgTable("fiados_supplier_orders", {
     .notNull()
     .default("0"),
   status: text("status").notNull().default("pendiente"), // "pendiente" | "encargado" | "recibido"
+  urgent: boolean("urgent").notNull().default(false),
   paid: boolean("paid").notNull().default(false),
   paidAt: timestamp("paidAt"),
   createdByUserId: text("createdByUserId").notNull(),

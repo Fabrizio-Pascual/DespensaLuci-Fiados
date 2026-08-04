@@ -69,6 +69,27 @@ export async function getCustomerPurchases(customerId: number) {
     .orderBy(desc(customerPurchases.createdAt))
 }
 
+export async function getCustomerStatement(customerId: number) {
+  await requireEnabledUser()
+  const [customer] = await db.select().from(customers).where(eq(customers.id, customerId))
+  if (!customer) throw new Error("Cliente no encontrado")
+
+  const purchases = await db
+    .select()
+    .from(customerPurchases)
+    .where(eq(customerPurchases.customerId, customerId))
+    .orderBy(desc(customerPurchases.createdAt))
+
+  const pendiente = purchases
+    .filter((p) => !p.paid)
+    .reduce((sum, p) => sum + Number(p.amount), 0)
+  const pagadoHistorico = purchases
+    .filter((p) => p.paid)
+    .reduce((sum, p) => sum + Number(p.amount), 0)
+
+  return { customer, purchases, pendiente, pagadoHistorico }
+}
+
 export async function addCustomer(formData: {
   name: string
   phone?: string

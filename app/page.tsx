@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { getCustomers } from "@/app/actions/customers"
 import { getSuppliers } from "@/app/actions/suppliers"
 import { getAllUsers } from "@/app/actions/admin"
+import { getOwnerSummary } from "@/app/actions/summary"
 import { Dashboard } from "@/components/dashboard"
 import { PendingApproval } from "@/components/pending-approval"
 
@@ -15,10 +16,11 @@ export default async function HomePage() {
   }
 
   const isAdmin = user.role === "admin"
-  const [customers, suppliers, users] = await Promise.all([
+  const [customers, suppliers, users, summary] = await Promise.all([
     getCustomers(),
     getSuppliers(),
     isAdmin ? getAllUsers() : Promise.resolve([]),
+    isAdmin ? getOwnerSummary() : Promise.resolve(null),
   ])
 
   return (
@@ -27,6 +29,7 @@ export default async function HomePage() {
       initialCustomers={customers}
       initialSuppliers={suppliers}
       initialUsers={users}
+      summary={summary}
     />
   )
 }
