@@ -1,11 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SignOutButton } from "@/components/sign-out-button"
 import { CustomersSection } from "@/components/customers/customers-section"
 import { SuppliersSection } from "@/components/suppliers/suppliers-section"
 import { EmployeesSection } from "@/components/employees/employees-section"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { Badge } from "@/components/ui/badge"
 import { Users, Truck, ShieldCheck } from "lucide-react"
 import type { AppUser } from "@/lib/session"
@@ -37,9 +39,12 @@ export function Dashboard({
   summary: OwnerSummary | null
 }) {
   const isAdmin = user.role === "admin"
+  const [tab, setTab] = useState("clientes")
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="min-h-dvh">
+      <div className="mesh-bg" />
+
       <header className="sticky top-0 z-20 bg-primary text-primary-foreground shadow-md">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -68,10 +73,10 @@ export function Dashboard({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-5">
+      <main className="mx-auto max-w-3xl px-4 py-5 pb-24 md:pb-5">
         {isAdmin && summary && <OwnerSummaryBanner summary={summary} />}
-        <Tabs defaultValue="clientes" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={tab} onValueChange={setTab} className="w-full">
+          <TabsList className="hidden w-full grid-cols-3 md:grid">
             <TabsTrigger value="clientes" className="gap-1.5">
               <Users className="h-4 w-4" />
               <span>Clientes</span>
@@ -86,21 +91,23 @@ export function Dashboard({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="clientes" className="mt-5">
+          <TabsContent value="clientes" className="reveal mt-5">
             <CustomersSection initialCustomers={initialCustomers} />
           </TabsContent>
 
-          <TabsContent value="proveedores" className="mt-5">
+          <TabsContent value="proveedores" className="reveal mt-5">
             <SuppliersSection initialSuppliers={initialSuppliers} />
           </TabsContent>
 
           {isAdmin && (
-            <TabsContent value="empleados" className="mt-5">
+            <TabsContent value="empleados" className="reveal mt-5">
               <EmployeesSection initialUsers={initialUsers} currentUserId={user.id} />
             </TabsContent>
           )}
         </Tabs>
       </main>
+
+      <MobileBottomNav tab={tab} onTabChange={setTab} isAdmin={isAdmin} />
     </div>
   )
 }
