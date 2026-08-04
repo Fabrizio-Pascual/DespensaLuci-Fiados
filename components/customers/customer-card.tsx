@@ -86,15 +86,15 @@ export function CustomerCard({
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
-    if (!desc.trim()) {
-      toast.error("Anotá qué se llevó.")
+    if (!amount || Number(amount) <= 0) {
+      toast.error("Anotá un monto mayor a 0.")
       return
     }
     setAdding(true)
     try {
       await addPurchase({
         customerId: customer.id,
-        description: desc,
+        description: desc.trim() || "Fiado",
         amount: Number(amount || 0),
       })
       setDesc("")
@@ -221,7 +221,7 @@ export function CustomerCard({
           <form onSubmit={handleAdd} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex flex-1 flex-col gap-1.5">
               <Label htmlFor={`desc-${customer.id}`} className="text-xs">
-                ¿Qué llevó?
+                ¿Qué llevó? (opcional)
               </Label>
               <Input
                 id={`desc-${customer.id}`}

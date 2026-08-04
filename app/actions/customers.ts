@@ -124,10 +124,7 @@ export async function addPurchase(formData: {
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new Error("Anotá un monto mayor a 0.")
   }
-  const description = formData.description?.trim()
-  if (!description) {
-    throw new Error("Anotá qué se llevó.")
-  }
+  const description = formData.description?.trim() || "Fiado"
 
   await db.insert(customerPurchases).values({
     customerId: formData.customerId,
