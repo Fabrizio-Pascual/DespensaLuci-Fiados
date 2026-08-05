@@ -1,6 +1,6 @@
 "use client"
 
-import { Users, Truck, ShieldCheck, Plus } from "lucide-react"
+import { Users, Truck, ShieldCheck, ScanBarcode, Plus } from "lucide-react"
 
 export function MobileBottomNav({
   tab,
@@ -30,22 +30,26 @@ export function MobileBottomNav({
 
         <button
           type="button"
-          onClick={() => onTabChange("clientes")}
-          className="flex flex-1 h-full flex-col items-center justify-center gap-0.5"
-          aria-label="Agregar cliente o proveedor"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md -mt-4">
-            <Plus className="h-5 w-5" />
-          </span>
-        </button>
-
-        <button
-          type="button"
           onClick={() => onTabChange("proveedores")}
           className={itemClass(tab === "proveedores")}
         >
           <Truck className="h-5 w-5" />
           <span className={labelClass}>Proveedores</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onTabChange("productos")}
+          className="flex flex-1 h-full flex-col items-center justify-center gap-0.5"
+          aria-label="Productos"
+        >
+          <span
+            className={`flex h-9 w-9 items-center justify-center rounded-full shadow-md -mt-4 ${
+              tab === "productos" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+            }`}
+          >
+            <ScanBarcode className="h-5 w-5" />
+          </span>
         </button>
 
         {isAdmin && (

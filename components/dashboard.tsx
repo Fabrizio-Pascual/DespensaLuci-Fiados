@@ -7,9 +7,10 @@ import { SignOutButton } from "@/components/sign-out-button"
 import { CustomersSection } from "@/components/customers/customers-section"
 import { SuppliersSection } from "@/components/suppliers/suppliers-section"
 import { EmployeesSection } from "@/components/employees/employees-section"
+import { ProductsSection } from "@/components/products/products-section"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { Badge } from "@/components/ui/badge"
-import { Users, Truck, ShieldCheck } from "lucide-react"
+import { Users, Truck, ShieldCheck, ScanBarcode } from "lucide-react"
 import type { AppUser } from "@/lib/session"
 import type { CustomerWithBalance } from "@/app/actions/customers"
 import type { SupplierWithBalance } from "@/app/actions/suppliers"
@@ -76,7 +77,7 @@ export function Dashboard({
       <main className="mx-auto max-w-3xl px-4 py-5 pb-24 md:pb-5">
         {isAdmin && summary && <OwnerSummaryBanner summary={summary} />}
         <Tabs value={tab} onValueChange={setTab} className="w-full">
-          <TabsList className="hidden w-full grid-cols-3 md:grid">
+          <TabsList className="hidden w-full grid-cols-4 md:grid">
             <TabsTrigger value="clientes" className="gap-1.5">
               <Users className="h-4 w-4" />
               <span>Clientes</span>
@@ -84,6 +85,10 @@ export function Dashboard({
             <TabsTrigger value="proveedores" className="gap-1.5">
               <Truck className="h-4 w-4" />
               <span>Proveedores</span>
+            </TabsTrigger>
+            <TabsTrigger value="productos" className="gap-1.5">
+              <ScanBarcode className="h-4 w-4" />
+              <span>Productos</span>
             </TabsTrigger>
             <TabsTrigger value="empleados" className="gap-1.5" disabled={!isAdmin}>
               <ShieldCheck className="h-4 w-4" />
@@ -97,6 +102,10 @@ export function Dashboard({
 
           <TabsContent value="proveedores" className="reveal mt-5">
             <SuppliersSection initialSuppliers={initialSuppliers} />
+          </TabsContent>
+
+          <TabsContent value="productos" className="reveal mt-5">
+            <ProductsSection />
           </TabsContent>
 
           {isAdmin && (
