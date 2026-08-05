@@ -189,7 +189,8 @@ export function SupplierCard({
   const hasToPay = supplier.toPay > 0
 
   return (
-    <Card className={cn("overflow-hidden transition-colors", open && "ring-1 ring-primary/20")}>
+    <Card className={cn("overflow-hidden premium-transition", open && "ring-1 ring-primary/20")}>
+      <div className="h-1 w-full bg-gradient-to-r from-accent to-primary" />
       <button
         type="button"
         onClick={handleToggle}

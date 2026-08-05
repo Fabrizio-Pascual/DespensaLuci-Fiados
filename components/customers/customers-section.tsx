@@ -75,7 +75,7 @@ export function CustomersSection({
       {filtered.length === 0 ? (
         <EmptyState hasCustomers={initialCustomers.length > 0} />
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="reveal-sequential flex flex-col gap-3">
           {filtered.map((customer) => (
             <li key={customer.id}>
               <CustomerCard customer={customer} onChange={() => router.refresh()} />

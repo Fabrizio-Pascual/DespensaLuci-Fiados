@@ -163,7 +163,8 @@ export function CustomerCard({
   const hasDebt = customer.balance > 0
 
   return (
-    <Card className={cn("overflow-hidden transition-colors", open && "ring-1 ring-primary/20")}>
+    <Card className={cn("overflow-hidden premium-transition", open && "ring-1 ring-primary/20")}>
+      <div className="h-1 w-full bg-gradient-to-r from-primary to-accent" />
       <button
         type="button"
         onClick={handleToggle}

@@ -72,7 +72,7 @@ export function SuppliersSection({
       {filtered.length === 0 ? (
         <EmptyState hasSuppliers={initialSuppliers.length > 0} />
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="reveal-sequential flex flex-col gap-3">
           {filtered.map((supplier) => (
             <li key={supplier.id}>
               <SupplierCard supplier={supplier} onChange={() => router.refresh()} />
