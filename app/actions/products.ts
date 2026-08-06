@@ -153,3 +153,79 @@ export async function deleteVariant(id: string) {
   await requireEnabledUser()
   await pool.query(`delete from public.product_variants where id = $1`, [id])
 }
+
+export async function createProduct(data: {
+  name: string
+  category_id: string
+  price: number
+  stock: number
+  unit: string
+  description?: string
+  image_url?: string
+  barcode?: string
+}) {
+  await requireEnabledUser()
+  if (!data.name.trim()) throw new Error("Ponele un nombre al producto.")
+  if (!data.category_id) throw new Error("Elegí una categoría.")
+  if (!data.price || data.price <= 0) throw new Error("Poné un precio válido.")
+
+  const { rows } = await pool.query(
+    `insert into public.products
+       (name, category_id, price, stock, unit, description, image_url, barcode, is_active)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, true)
+     returning id`,
+    [
+      data.name.trim(),
+      data.category_id,
+      data.price,
+      data.stock || 0,
+      data.unit || "unidad",
+      data.description?.trim() || null,
+      data.image_url?.trim() || null,
+      data.barcode?.trim() || null,
+    ],
+  )
+  return rows[0].id as string
+}
+
+export async function createCategory(data: { name: string; image_url?: string }) {
+  await requireEnabledUser()
+  if (!data.name.trim()) throw new Error("Ponele un nombre a la categoría.")
+  const slug = data.name
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+
+  const { rows: countRows } = await pool.query(
+    `select coalesce(max(display_order), 0) + 1 as next from public.categories`,
+  )
+  await pool.query(
+    `insert into public.categories (name, slug, image_url, display_order)
+     values ($1, $2, $3, $4)`,
+    [data.name.trim(), slug, data.image_url?.trim() || null, countRows[0].next],
+  )
+}
+
+export async function updateCategory(id: string, data: { name: string; image_url?: string }) {
+  await requireEnabledUser()
+  if (!data.name.trim()) throw new Error("Ponele un nombre a la categoría.")
+  await pool.query(
+    `update public.categories set name = $2, image_url = $3 where id = $1`,
+    [id, data.name.trim(), data.image_url?.trim() || null],
+  )
+}
+
+export async function deleteCategory(id: string) {
+  await requireEnabledUser()
+  const { rows } = await pool.query(
+    `select count(*)::int as count from public.products where category_id = $1`,
+    [id],
+  )
+  if (rows[0].count > 0) {
+    throw new Error(`No se puede borrar: hay ${rows[0].count} producto(s) en esta categoría.`)
+  }
+  await pool.query(`delete from public.categories where id = $1`, [id])
+}

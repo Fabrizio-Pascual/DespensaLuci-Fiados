@@ -20,6 +20,8 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { BarcodeScanner } from "@/components/products/barcode-scanner"
 import { ImportExportProducts } from "@/components/products/import-export-products"
+import { NewProductDialog } from "@/components/products/new-product-dialog"
+import { ManageCategoriesDialog } from "@/components/products/manage-categories-dialog"
 import { Search, ScanBarcode, Package, Loader2, FileSpreadsheet, Plus, Trash2, Tag } from "lucide-react"
 import { toast } from "sonner"
 
@@ -37,6 +39,10 @@ export function ProductsSection() {
   useEffect(() => {
     getCategories().then(setCategories).catch(() => {})
   }, [])
+
+  function refreshCategories() {
+    getCategories().then(setCategories).catch(() => {})
+  }
 
   async function runSearch(q: string) {
     setActiveCategory(null)
@@ -160,11 +166,16 @@ export function ProductsSection() {
                 <ScanBarcode className="h-4 w-4" />
                 <span className="hidden sm:inline">Escanear</span>
               </Button>
-              <Button variant="outline" onClick={() => setImportOpen(true)}>
-                <FileSpreadsheet className="h-4 w-4" />
-                <span className="hidden sm:inline">Excel</span>
-              </Button>
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <NewProductDialog categories={categories} onCreated={refreshCurrent} />
+            <ManageCategoriesDialog categories={categories} onChanged={refreshCategories} />
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <FileSpreadsheet className="h-4 w-4" />
+              Excel
+            </Button>
           </div>
 
           {categories.length > 0 && (
