@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
     try {
       await authClient.requestPasswordReset({
         email,
-        redirectTo: "/reset-password",
+        redirectTo: "/nueva-contrasena",
       })
       setSent(true)
     } catch {
