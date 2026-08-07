@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { Suspense, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
@@ -19,20 +19,20 @@ import { Loader2, KeyRound, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 
 export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={null}>
-      <ResetPasswordForm />
-    </Suspense>
-  )
-}
-
-function ResetPasswordForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const token = searchParams.get("token")
+  const [token, setToken] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+
+  // Leemos el token directo de la URL del navegador, ya con la página
+  // cargada del todo (evita líos de pre-renderizado en el servidor).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setToken(params.get("token"))
+    setReady(true)
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -65,7 +65,7 @@ function ResetPasswordForm() {
           </div>
           <CardTitle className="text-xl">Nueva contraseña</CardTitle>
           <CardDescription>
-            {!token
+            {ready && !token
               ? "Este link no tiene token. Pedí uno nuevo desde 'Olvidé mi contraseña'."
               : "Elegí tu nueva contraseña."}
           </CardDescription>
@@ -92,7 +92,7 @@ function ResetPasswordForm() {
                 />
                 <p className="text-xs text-muted-foreground">Mínimo 8 caracteres.</p>
               </div>
-              <Button type="submit" disabled={loading || !token} className="w-full">
+              <Button type="submit" disabled={loading || !ready || !token} className="w-full">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Guardar contraseña
               </Button>
