@@ -43,6 +43,13 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+    // Todavía no tenemos un servicio de email conectado, así que el link
+    // para poner una contraseña nueva queda anotado en los Runtime Logs
+    // de Vercel (Vercel → tu proyecto → Logs) — buscá la línea que dice
+    // "RESET PASSWORD LINK" apenas después de pedirlo.
+    sendResetPassword: async ({ user, url }) => {
+      console.log(`RESET PASSWORD LINK for ${user.email}: ${url}`)
+    },
   },
   databaseHooks: {
     user: {

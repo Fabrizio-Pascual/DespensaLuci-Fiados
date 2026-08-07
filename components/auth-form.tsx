@@ -128,6 +128,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
               {isSignUp && (
                 <p className="text-xs text-muted-foreground">Mínimo 8 caracteres.</p>
               )}
+              {!isSignUp && (
+                <Link href="/forgot-password" className="text-xs text-primary hover:underline self-end">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              )}
             </div>
 
             <Button type="submit" disabled={loading} className="mt-1 w-full">
