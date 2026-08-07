@@ -73,7 +73,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     "https://despensalucifiados.vercel.app",
     "https://despensalucifiados-git-main-fpascual624-8380s-projects.vercel.app",
-    "https://*.fpascual624-8380s-projects.vercel.app",
+    "https://despensalucifiados-fpascual624-8380s-projects.vercel.app",
     ...(process.env.V0_RUNTIME_URL ? [process.env.V0_RUNTIME_URL] : []),
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
     ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
