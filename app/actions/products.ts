@@ -218,6 +218,11 @@ export async function deleteVariant(id: string) {
   await pool.query(`delete from public.product_variants where id = $1`, [id])
 }
 
+export async function deleteProduct(id: string) {
+  await requireEnabledUser()
+  await pool.query(`delete from public.products where id = $1`, [id])
+}
+
 export async function createProduct(data: {
   name: string
   category_id: string
