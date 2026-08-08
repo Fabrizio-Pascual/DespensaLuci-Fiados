@@ -45,19 +45,52 @@ export function BarcodeScanner({
 }) {
   const controlsRef = useRef<{ stop: () => void } | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const drawRafRef = useRef<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [starting, setStarting] = useState(true)
 
-  // Usamos un "callback ref" en vez de useRef normal para enterarnos
-  // exactamente cuando el <video> queda montado en el DOM. El modal (Dialog)
-  // anima su apertura, así que el elemento puede no existir todavía en el
-  // primer render donde open pasa a true; con useRef común eso disparaba
-  // "no-video-element". Con este patrón, el efecto que arranca la cámara
-  // se dispara recién cuando el nodo realmente está listo.
+  // Callback ref: nos avisa exactamente cuando el <video> queda montado en
+  // el DOM (el modal anima su apertura, así que puede no existir todavía en
+  // el primer render donde open pasa a true).
   const [videoNode, setVideoNode] = useState<HTMLVideoElement | null>(null)
   const videoRefCallback = useCallback((node: HTMLVideoElement | null) => {
     setVideoNode(node)
   }, [])
+
+  // Dibuja a mano los frames del <video> en un <canvas>. Esto es necesario
+  // porque en los navegadores de iOS (Brave, Chrome, Firefox: todos corren
+  // sobre el motor WebKit que exige Apple) el elemento <video> con un stream
+  // de cámara puede quedar en negro aunque el stream esté activo. Pintando
+  // los frames a mano en un canvas evitamos ese bug de compositing.
+  useEffect(() => {
+    if (starting || error) return
+    const video = videoNode
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    let active = true
+    function draw() {
+      if (!active || !video || !canvas || !ctx) return
+      if (video.readyState >= 2 && video.videoWidth > 0) {
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+          canvas.width = video.videoWidth
+          canvas.height = video.videoHeight
+        }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      }
+      drawRafRef.current = requestAnimationFrame(draw)
+    }
+    draw()
+
+    return () => {
+      active = false
+      if (drawRafRef.current) cancelAnimationFrame(drawRafRef.current)
+      drawRafRef.current = null
+    }
+  }, [starting, error, videoNode])
 
   useEffect(() => {
     if (!open || !videoNode) return
@@ -150,7 +183,11 @@ export function BarcodeScanner({
           <DialogTitle>Escanear código de barras</DialogTitle>
         </DialogHeader>
         <div className="relative aspect-square bg-black">
-          <video ref={videoRefCallback} autoPlay muted playsInline className="h-full w-full object-cover" />
+          {/* El <video> real queda invisible (pero sigue "vivo" en el DOM,
+              lo necesita la librería para decodificar). Lo que ve la
+              persona es el <canvas>, que se pinta a mano frame a frame. */}
+          <video ref={videoRefCallback} autoPlay muted playsInline className="absolute inset-0 h-full w-full object-cover opacity-0" />
+          <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
           {starting && !error && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white">
               <Loader2 className="h-6 w-6 animate-spin" />
