@@ -8,6 +8,7 @@ export type ProductVariantRow = {
   name: string
   stock: number
   price_modifier: number
+  image_url: string | null
 }
 
 export type ProductRow = {
@@ -42,7 +43,7 @@ async function attachVariants(products: ProductRow[]): Promise<ProductRow[]> {
   if (products.length === 0) return products
   const ids = products.map((p) => p.id)
   const { rows } = await pool.query(
-    `select id, product_id, name, stock, price_modifier
+    `select id, product_id, name, stock, price_modifier, image_url
      from public.product_variants
      where product_id = any($1::uuid[])
      order by name asc`,
@@ -51,7 +52,7 @@ async function attachVariants(products: ProductRow[]): Promise<ProductRow[]> {
   const byProduct = new Map<string, ProductVariantRow[]>()
   for (const r of rows) {
     const list = byProduct.get(r.product_id) ?? []
-    list.push({ id: r.id, name: r.name, stock: r.stock, price_modifier: Number(r.price_modifier) })
+    list.push({ id: r.id, name: r.name, stock: r.stock, price_modifier: Number(r.price_modifier), image_url: r.image_url })
     byProduct.set(r.product_id, list)
   }
   return products.map((p) => ({ ...p, variants: byProduct.get(p.id) ?? [] }))
@@ -186,22 +187,23 @@ export async function updateProduct(
   )
 }
 
-export async function updateVariantField(id: string, field: "stock" | "price_modifier", value: number) {
+export async function updateVariantField(id: string, field: "stock" | "price_modifier" | "image_url", value: number | string | null) {
   await requireEnabledUser()
-  const column = field === "stock" ? "stock" : "price_modifier"
+  const columns = { stock: "stock", price_modifier: "price_modifier", image_url: "image_url" } as const
+  const column = columns[field]
   await pool.query(`update public.product_variants set "${column}" = $2 where id = $1`, [id, value])
 }
 
 export async function createVariant(
   productId: string,
-  data: { name: string; stock: number; price_modifier: number },
+  data: { name: string; stock: number; price_modifier: number; image_url?: string },
 ) {
   await requireEnabledUser()
   if (!data.name.trim()) throw new Error("Ponele un nombre al sabor/variante.")
   await pool.query(
-    `insert into public.product_variants (product_id, name, stock, price_modifier, is_active)
-     values ($1, $2, $3, $4, true)`,
-    [productId, data.name.trim(), data.stock || 0, data.price_modifier || 0],
+    `insert into public.product_variants (product_id, name, stock, price_modifier, image_url, is_active)
+     values ($1, $2, $3, $4, $5, true)`,
+    [productId, data.name.trim(), data.stock || 0, data.price_modifier || 0, data.image_url?.trim() || null],
   )
 }
 

@@ -130,7 +130,7 @@ export function ProductsSection() {
     })
   }
 
-  function updateVariantLocal(productId: string, variantId: string, field: "stock" | "price_modifier", value: number) {
+  function updateVariantLocal(productId: string, variantId: string, field: "stock" | "price_modifier" | "image_url", value: number | string) {
     setResults((prev) =>
       prev
         ? prev.map((p) =>
@@ -142,7 +142,7 @@ export function ProductsSection() {
     )
   }
 
-  function persistVariant(variantId: string, field: "stock" | "price_modifier", value: number) {
+  function persistVariant(variantId: string, field: "stock" | "price_modifier" | "image_url", value: number | string) {
     startTransition(async () => {
       try {
         await updateVariantField(variantId, field, value)
@@ -366,44 +366,64 @@ export function ProductsSection() {
                 <div className="flex flex-col gap-2 rounded-xl bg-secondary/40 p-3">
                   <p className="text-xs font-medium text-muted-foreground">Sabores / variantes</p>
                   {p.variants.map((v) => (
-                    <div key={v.id} className="flex items-center gap-2">
-                      <span className="flex-1 truncate text-sm">{v.name}</span>
-                      <Input
-                        type="number"
-                        value={v.stock}
-                        onFocus={selectAllOnFocus}
-                        onChange={(e) =>
-                          updateVariantLocal(p.id, v.id, "stock", e.target.value === "" ? 0 : Number(e.target.value))
-                        }
-                        onBlur={(e) => persistVariant(v.id, "stock", parseInt(e.target.value) || 0)}
-                        className="h-8 w-20 bg-card"
-                        title="Stock"
-                      />
-                      <Input
-                        type="number"
-                        value={v.price_modifier}
-                        onFocus={selectAllOnFocus}
-                        onChange={(e) =>
-                          updateVariantLocal(
-                            p.id,
-                            v.id,
-                            "price_modifier",
-                            e.target.value === "" ? 0 : Number(e.target.value),
-                          )
-                        }
-                        onBlur={(e) => persistVariant(v.id, "price_modifier", parseFloat(e.target.value) || 0)}
-                        className="h-8 w-24 bg-card"
-                        title="Diferencia de precio"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteVariant(p.id, v.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                    <div key={v.id} className="flex flex-col gap-1.5 rounded-lg bg-card/60 p-2">
+                      <div className="flex items-center gap-2">
+                        <span className="flex-1 truncate text-sm">{v.name}</span>
+                        <Input
+                          type="number"
+                          value={v.stock}
+                          onFocus={selectAllOnFocus}
+                          onChange={(e) =>
+                            updateVariantLocal(p.id, v.id, "stock", e.target.value === "" ? 0 : Number(e.target.value))
+                          }
+                          onBlur={(e) => persistVariant(v.id, "stock", parseInt(e.target.value) || 0)}
+                          className="h-8 w-20 bg-card"
+                          title="Stock"
+                        />
+                        <Input
+                          type="number"
+                          value={v.price_modifier}
+                          onFocus={selectAllOnFocus}
+                          onChange={(e) =>
+                            updateVariantLocal(
+                              p.id,
+                              v.id,
+                              "price_modifier",
+                              e.target.value === "" ? 0 : Number(e.target.value),
+                            )
+                          }
+                          onBlur={(e) => persistVariant(v.id, "price_modifier", parseFloat(e.target.value) || 0)}
+                          className="h-8 w-24 bg-card"
+                          title="Diferencia de precio"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteVariant(p.id, v.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-muted">
+                          {v.image_url ? (
+                            <Image src={v.image_url} alt={v.name} fill className="object-contain" sizes="32px" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <Package className="h-3.5 w-3.5 text-muted-foreground/50" />
+                            </div>
+                          )}
+                        </div>
+                        <Input
+                          value={v.image_url ?? ""}
+                          onChange={(e) => updateVariantLocal(p.id, v.id, "image_url", e.target.value)}
+                          onBlur={(e) => persistVariant(v.id, "image_url", e.target.value.trim())}
+                          placeholder="URL de la imagen del sabor"
+                          className="h-8 flex-1 bg-card text-xs"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -465,6 +485,7 @@ function NewVariantForm({
   const [name, setName] = useState("")
   const [stock, setStock] = useState("")
   const [priceModifier, setPriceModifier] = useState("")
+  const [imageUrl, setImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
@@ -478,6 +499,7 @@ function NewVariantForm({
         name,
         stock: Number(stock) || 0,
         price_modifier: Number(priceModifier) || 0,
+        image_url: imageUrl,
       })
       toast.success("Sabor agregado.")
       onCreated()
@@ -501,6 +523,12 @@ function NewVariantForm({
           className="h-9 bg-card"
         />
       </div>
+      <Input
+        placeholder="URL de la imagen (opcional)"
+        value={imageUrl}
+        onChange={(e) => setImageUrl(e.target.value)}
+        className="h-9 bg-card"
+      />
       <div className="flex gap-2">
         <Button size="sm" onClick={handleSave} disabled={saving}>
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Guardar sabor"}
