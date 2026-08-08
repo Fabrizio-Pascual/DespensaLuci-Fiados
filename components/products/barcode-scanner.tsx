@@ -50,6 +50,16 @@ export function BarcodeScanner({
   const [error, setError] = useState<string | null>(null)
   const [starting, setStarting] = useState(true)
 
+  // El parche de "dibujar el video en un canvas" es específico de un bug de
+  // compositing de WebKit/iOS. En Android (sobre todo Brave, por sus
+  // protecciones anti-fingerprinting que interfieren con canvas) ese mismo
+  // parche puede terminar tapando la imagen. Por eso solo lo usamos en iOS;
+  // en el resto mostramos el <video> real directamente.
+  const [useCanvasPatch] = useState(() => {
+    if (typeof navigator === "undefined") return false
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  })
+
   // Callback ref: nos avisa exactamente cuando el <video> queda montado en
   // el DOM (el modal anima su apertura, así que puede no existir todavía en
   // el primer render donde open pasa a true).
@@ -64,6 +74,7 @@ export function BarcodeScanner({
   // de cámara puede quedar en negro aunque el stream esté activo. Pintando
   // los frames a mano en un canvas evitamos ese bug de compositing.
   useEffect(() => {
+    if (!useCanvasPatch) return
     if (starting || error) return
     const video = videoNode
     const canvas = canvasRef.current
@@ -186,8 +197,14 @@ export function BarcodeScanner({
           {/* El <video> real queda invisible (pero sigue "vivo" en el DOM,
               lo necesita la librería para decodificar). Lo que ve la
               persona es el <canvas>, que se pinta a mano frame a frame. */}
-          <video ref={videoRefCallback} autoPlay muted playsInline className="absolute inset-0 h-full w-full object-cover opacity-0" />
-          <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />
+          <video
+            ref={videoRefCallback}
+            autoPlay
+            muted
+            playsInline
+            className={`absolute inset-0 h-full w-full object-cover ${useCanvasPatch ? "opacity-0" : ""}`}
+          />
+          {useCanvasPatch && <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-cover" />}
           {starting && !error && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white">
               <Loader2 className="h-6 w-6 animate-spin" />

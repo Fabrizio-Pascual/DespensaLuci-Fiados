@@ -10,6 +10,7 @@ import {
   updateVariantField,
   createVariant,
   deleteVariant,
+  deleteProduct,
   toggleProductActive,
   type ProductRow,
   type CategoryRow,
@@ -147,6 +148,25 @@ export function ProductsSection() {
         await updateVariantField(variantId, field, value)
       } catch {
         toast.error("No se pudo guardar el cambio.")
+      }
+    })
+  }
+
+  function handleDeleteProduct(product: ProductRow) {
+    const confirmMsg =
+      product.variants.length > 0
+        ? `¿Borrar "${product.name}" y sus ${product.variants.length} sabor(es)? Esta acción no se puede deshacer.`
+        : `¿Borrar "${product.name}"? Esta acción no se puede deshacer.`
+    if (!window.confirm(confirmMsg)) return
+
+    setResults((prev) => (prev ? prev.filter((p) => p.id !== product.id) : prev))
+    startTransition(async () => {
+      try {
+        await deleteProduct(product.id)
+        toast.success("Producto borrado.")
+      } catch {
+        toast.error("No se pudo borrar el producto.")
+        refreshCurrent()
       }
     })
   }
@@ -294,6 +314,16 @@ export function ProductsSection() {
                   title="Editar producto"
                 >
                   <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDeleteProduct(p)}
+                  title="Borrar producto"
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
 
