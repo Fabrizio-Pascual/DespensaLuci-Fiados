@@ -21,6 +21,7 @@ export type ProductRow = {
   description: string | null
   category_id: string | null
   category_name: string | null
+  is_active: boolean
   variants: ProductVariantRow[]
 }
 
@@ -63,7 +64,7 @@ export async function searchProducts(query: string): Promise<ProductRow[]> {
   if (!q) return []
 
   const { rows } = await pool.query(
-    `select p.id, p.name, p.price, p.stock, p.unit, p.barcode, p.image_url, p.description, p.category_id,
+    `select p.id, p.name, p.price, p.stock, p.unit, p.barcode, p.image_url, p.description, p.category_id, p.is_active,
             c.name as category_name
      from public.products p
      left join public.categories c on c.id = p.category_id
@@ -86,6 +87,7 @@ export async function searchProducts(query: string): Promise<ProductRow[]> {
       description: r.description,
       category_id: r.category_id,
       category_name: r.category_name,
+      is_active: r.is_active,
       variants: [],
     })),
   )
@@ -96,7 +98,7 @@ export async function searchProducts(query: string): Promise<ProductRow[]> {
 export async function listProductsByCategory(categoryId: string): Promise<ProductRow[]> {
   await requireEnabledUser()
   const { rows } = await pool.query(
-    `select p.id, p.name, p.price, p.stock, p.unit, p.barcode, p.image_url, p.description, p.category_id,
+    `select p.id, p.name, p.price, p.stock, p.unit, p.barcode, p.image_url, p.description, p.category_id, p.is_active,
             c.name as category_name
      from public.products p
      left join public.categories c on c.id = p.category_id
@@ -118,6 +120,7 @@ export async function listProductsByCategory(categoryId: string): Promise<Produc
       description: r.description,
       category_id: r.category_id,
       category_name: r.category_name,
+      is_active: r.is_active,
       variants: [],
     })),
   )
@@ -200,6 +203,14 @@ export async function createVariant(
      values ($1, $2, $3, $4, true)`,
     [productId, data.name.trim(), data.stock || 0, data.price_modifier || 0],
   )
+}
+
+export async function toggleProductActive(id: string, isActive: boolean) {
+  await requireEnabledUser()
+  await pool.query(`update public.products set is_active = $2, updated_at = now() where id = $1`, [
+    id,
+    isActive,
+  ])
 }
 
 export async function deleteVariant(id: string) {

@@ -10,6 +10,7 @@ import {
   updateVariantField,
   createVariant,
   deleteVariant,
+  toggleProductActive,
   type ProductRow,
   type CategoryRow,
 } from "@/app/actions/products"
@@ -23,7 +24,7 @@ import { ImportExportProducts } from "@/components/products/import-export-produc
 import { NewProductDialog } from "@/components/products/new-product-dialog"
 import { EditProductDialog } from "@/components/products/edit-product-dialog"
 import { ManageCategoriesDialog } from "@/components/products/manage-categories-dialog"
-import { Search, ScanBarcode, Package, Loader2, FileSpreadsheet, Plus, Trash2, Tag, Pencil } from "lucide-react"
+import { Search, ScanBarcode, Package, Loader2, FileSpreadsheet, Plus, Trash2, Tag, Pencil, Eye, EyeOff } from "lucide-react"
 import { toast } from "sonner"
 
 // Selecciona todo el texto al enfocar un input numérico para que al tipear
@@ -102,6 +103,20 @@ export function ProductsSection() {
 
   function updateLocal(id: string, field: "stock" | "price" | "barcode", value: any) {
     setResults((prev) => (prev ? prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)) : prev))
+  }
+
+  function toggleActive(id: string, current: boolean) {
+    const next = !current
+    setResults((prev) => (prev ? prev.map((p) => (p.id === id ? { ...p, is_active: next } : p)) : prev))
+    startTransition(async () => {
+      try {
+        await toggleProductActive(id, next)
+        toast.success(next ? "Producto visible en la tienda." : "Producto oculto de la tienda.")
+      } catch {
+        setResults((prev) => (prev ? prev.map((p) => (p.id === id ? { ...p, is_active: current } : p)) : prev))
+        toast.error("No se pudo cambiar la visibilidad.")
+      }
+    })
   }
 
   function persist(id: string, field: "stock" | "price" | "barcode", value: string | number) {
@@ -226,8 +241,8 @@ export function ProductsSection() {
 
       <div className="reveal-sequential flex flex-col gap-3">
         {results?.map((p) => (
-          <Card key={p.id} className="overflow-hidden premium-transition hover:shadow-md">
-            <div className="h-1 w-full bg-gradient-to-r from-primary to-accent" />
+          <Card key={p.id} className={`overflow-hidden premium-transition hover:shadow-md ${!p.is_active ? "opacity-60" : ""}`}>
+            <div className={`h-1 w-full bg-gradient-to-r ${p.is_active ? "from-primary to-accent" : "from-muted-foreground/40 to-muted-foreground/40"}`} />
             <CardContent className="flex flex-col gap-3 p-4">
               <div className="flex items-start gap-3">
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted">
@@ -240,7 +255,14 @@ export function ProductsSection() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">{p.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-sm font-medium text-foreground">{p.name}</p>
+                    {!p.is_active && (
+                      <Badge variant="secondary" className="shrink-0 text-[10px]">
+                        Oculto
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {p.category_name || "Sin categoría"} · {p.unit}
                   </p>
@@ -250,6 +272,16 @@ export function ProductsSection() {
                     </Badge>
                   )}
                 </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => toggleActive(p.id, p.is_active)}
+                  title={p.is_active ? "Ocultar de la tienda" : "Mostrar en la tienda"}
+                >
+                  {p.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
