@@ -18,6 +18,8 @@ export type ProductRow = {
   unit: string
   barcode: string | null
   image_url: string | null
+  description: string | null
+  category_id: string | null
   category_name: string | null
   variants: ProductVariantRow[]
 }
@@ -61,7 +63,7 @@ export async function searchProducts(query: string): Promise<ProductRow[]> {
   if (!q) return []
 
   const { rows } = await pool.query(
-    `select p.id, p.name, p.price, p.stock, p.unit, p.barcode, p.image_url,
+    `select p.id, p.name, p.price, p.stock, p.unit, p.barcode, p.image_url, p.description, p.category_id,
             c.name as category_name
      from public.products p
      left join public.categories c on c.id = p.category_id
@@ -81,6 +83,8 @@ export async function searchProducts(query: string): Promise<ProductRow[]> {
       unit: r.unit,
       barcode: r.barcode,
       image_url: r.image_url,
+      description: r.description,
+      category_id: r.category_id,
       category_name: r.category_name,
       variants: [],
     })),
@@ -92,7 +96,7 @@ export async function searchProducts(query: string): Promise<ProductRow[]> {
 export async function listProductsByCategory(categoryId: string): Promise<ProductRow[]> {
   await requireEnabledUser()
   const { rows } = await pool.query(
-    `select p.id, p.name, p.price, p.stock, p.unit, p.barcode, p.image_url,
+    `select p.id, p.name, p.price, p.stock, p.unit, p.barcode, p.image_url, p.description, p.category_id,
             c.name as category_name
      from public.products p
      left join public.categories c on c.id = p.category_id
@@ -111,6 +115,8 @@ export async function listProductsByCategory(categoryId: string): Promise<Produc
       unit: r.unit,
       barcode: r.barcode,
       image_url: r.image_url,
+      description: r.description,
+      category_id: r.category_id,
       category_name: r.category_name,
       variants: [],
     })),
@@ -119,15 +125,62 @@ export async function listProductsByCategory(categoryId: string): Promise<Produc
 
 export async function updateProductField(
   id: string,
-  field: "stock" | "price" | "barcode",
+  field: "stock" | "price" | "barcode" | "image_url",
   value: string | number,
 ) {
   await requireEnabledUser()
-  const column = field === "stock" ? "stock" : field === "price" ? "price" : "barcode"
+  const columns = { stock: "stock", price: "price", barcode: "barcode", image_url: "image_url" } as const
+  const column = columns[field]
   await pool.query(`update public.products set "${column}" = $2, updated_at = now() where id = $1`, [
     id,
     value,
   ])
+}
+
+// Actualiza el producto completo de una sola vez (usado por el diálogo "Editar producto"
+// con botón Guardar). Permite modificar también la URL de la imagen.
+export async function updateProduct(
+  id: string,
+  data: {
+    name: string
+    category_id: string
+    price: number
+    stock: number
+    unit: string
+    description?: string
+    image_url?: string
+    barcode?: string
+  },
+) {
+  await requireEnabledUser()
+  if (!data.name.trim()) throw new Error("Ponele un nombre al producto.")
+  if (!data.category_id) throw new Error("Elegí una categoría.")
+  if (!data.price || data.price <= 0) throw new Error("Poné un precio válido.")
+
+  await pool.query(
+    `update public.products
+        set name = $2,
+            category_id = $3,
+            price = $4,
+            stock = $5,
+            unit = $6,
+            description = $7,
+            image_url = $8,
+            barcode = $9,
+            updated_at = now()
+      where id = $1`,
+    [
+      id,
+      data.name.trim(),
+      data.category_id,
+      data.price,
+      data.stock || 0,
+      data.unit || "unidad",
+      data.description?.trim() || null,
+      data.image_url?.trim() || null,
+      data.barcode?.trim() || null,
+    ],
+  )
 }
 
 export async function updateVariantField(id: string, field: "stock" | "price_modifier", value: number) {

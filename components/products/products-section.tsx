@@ -21,9 +21,17 @@ import { Badge } from "@/components/ui/badge"
 import { BarcodeScanner } from "@/components/products/barcode-scanner"
 import { ImportExportProducts } from "@/components/products/import-export-products"
 import { NewProductDialog } from "@/components/products/new-product-dialog"
+import { EditProductDialog } from "@/components/products/edit-product-dialog"
 import { ManageCategoriesDialog } from "@/components/products/manage-categories-dialog"
-import { Search, ScanBarcode, Package, Loader2, FileSpreadsheet, Plus, Trash2, Tag } from "lucide-react"
+import { Search, ScanBarcode, Package, Loader2, FileSpreadsheet, Plus, Trash2, Tag, Pencil } from "lucide-react"
 import { toast } from "sonner"
+
+// Selecciona todo el texto al enfocar un input numérico para que al tipear
+// se reemplace el valor entero (ej: el "0" inicial) en vez de anteponerse
+// y obligar a usar la flechita o marcar todo a mano.
+function selectAllOnFocus(e: React.FocusEvent<HTMLInputElement>) {
+  e.target.select()
+}
 
 export function ProductsSection() {
   const [query, setQuery] = useState("")
@@ -34,6 +42,8 @@ export function ProductsSection() {
   const [categories, setCategories] = useState<CategoryRow[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [addingVariantFor, setAddingVariantFor] = useState<string | null>(null)
+  const [editingProduct, setEditingProduct] = useState<ProductRow | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
   const [, startTransition] = useTransition()
 
   useEffect(() => {
@@ -240,6 +250,19 @@ export function ProductsSection() {
                     </Badge>
                   )}
                 </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setEditingProduct(p)
+                    setEditOpen(true)
+                  }}
+                  title="Editar producto"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -248,6 +271,7 @@ export function ProductsSection() {
                   <Input
                     type="number"
                     value={p.price}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => updateLocal(p.id, "price", e.target.value === "" ? 0 : Number(e.target.value))}
                     onBlur={(e) => persist(p.id, "price", parseFloat(e.target.value) || 0)}
                     className="h-9"
@@ -258,6 +282,7 @@ export function ProductsSection() {
                   <Input
                     type="number"
                     value={p.stock}
+                    onFocus={selectAllOnFocus}
                     onChange={(e) => updateLocal(p.id, "stock", e.target.value === "" ? 0 : Number(e.target.value))}
                     onBlur={(e) => persist(p.id, "stock", parseInt(e.target.value) || 0)}
                     className="h-9"
@@ -284,6 +309,7 @@ export function ProductsSection() {
                       <Input
                         type="number"
                         value={v.stock}
+                        onFocus={selectAllOnFocus}
                         onChange={(e) =>
                           updateVariantLocal(p.id, v.id, "stock", e.target.value === "" ? 0 : Number(e.target.value))
                         }
@@ -294,6 +320,7 @@ export function ProductsSection() {
                       <Input
                         type="number"
                         value={v.price_modifier}
+                        onFocus={selectAllOnFocus}
                         onChange={(e) =>
                           updateVariantLocal(
                             p.id,
@@ -352,6 +379,13 @@ export function ProductsSection() {
         onOpenChange={setImportOpen}
         categories={categories}
         onDone={refreshCurrent}
+      />
+      <EditProductDialog
+        product={editingProduct}
+        categories={categories}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSaved={refreshCurrent}
       />
     </div>
   )

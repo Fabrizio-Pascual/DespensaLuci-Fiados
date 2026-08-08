@@ -27,11 +27,32 @@ export function BarcodeScanner({
 
     ;(async () => {
       try {
+        const video = videoRef.current
+        if (!video) throw new Error("no-video-element")
+
+        // Algunos navegadores (sobre todo en Android) sólo permiten que el
+        // video arranque "solo" (autoplay) si la propiedad `muted` está
+        // seteada en el elemento del DOM antes de asignarle el stream, y
+        // React no siempre llega a tiempo con el atributo JSX `muted`.
+        // Por eso la seteamos acá a mano, de forma imperativa.
+        video.muted = true
+        video.playsInline = true
+        // @ts-ignore -- propiedad no estándar que usa Safari/iOS viejo
+        video.setAttribute("webkit-playsinline", "true")
+
         const { BrowserMultiFormatReader } = await import("@zxing/browser")
         const reader = new BrowserMultiFormatReader()
-        const controls = await reader.decodeFromVideoDevice(
-          undefined, // deja que el navegador elija la cámara trasera si puede
-          videoRef.current!,
+
+        // Pedimos explícitamente la cámara trasera con constraints en vez de
+        // dejar que el navegador elija un dispositivo "por default": en
+        // varios celulares eso hace que se abra una cámara que nunca llega a
+        // pintar un frame (permiso concedido, pero pantalla negra).
+        const controls = await reader.decodeFromConstraints(
+          {
+            audio: false,
+            video: { facingMode: { ideal: "environment" } },
+          },
+          video,
           (result) => {
             if (result && !cancelled) {
               onDetected(result.getText())
@@ -40,16 +61,29 @@ export function BarcodeScanner({
             }
           },
         )
+
         if (cancelled) {
           controls.stop()
           return
         }
+
+        // Refuerzo: si por lo que sea el elemento quedó pausado, forzamos
+        // el play manualmente (silenciado, así que no debería bloquearlo
+        // ninguna política de autoplay).
+        try {
+          await video.play()
+        } catch {
+          // si ya está reproduciendo, play() puede rechazar sin que sea un error real
+        }
+
         controlsRef.current = controls
         setStarting(false)
       } catch (err) {
         console.error(err)
-        setError("No se pudo acceder a la cámara. Revisá los permisos del navegador.")
-        setStarting(false)
+        if (!cancelled) {
+          setError("No se pudo acceder a la cámara. Revisá los permisos del navegador.")
+          setStarting(false)
+        }
       }
     })()
 
@@ -67,7 +101,7 @@ export function BarcodeScanner({
           <DialogTitle>Escanear código de barras</DialogTitle>
         </DialogHeader>
         <div className="relative aspect-square bg-black">
-          <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
+          <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
           {starting && !error && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white">
               <Loader2 className="h-6 w-6 animate-spin" />
