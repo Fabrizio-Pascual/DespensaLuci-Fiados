@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -43,23 +43,31 @@ export function BarcodeScanner({
   onOpenChange: (open: boolean) => void
   onDetected: (code: string) => void
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
   const controlsRef = useRef<{ stop: () => void } | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [starting, setStarting] = useState(true)
 
+  // Usamos un "callback ref" en vez de useRef normal para enterarnos
+  // exactamente cuando el <video> queda montado en el DOM. El modal (Dialog)
+  // anima su apertura, así que el elemento puede no existir todavía en el
+  // primer render donde open pasa a true; con useRef común eso disparaba
+  // "no-video-element". Con este patrón, el efecto que arranca la cámara
+  // se dispara recién cuando el nodo realmente está listo.
+  const [videoNode, setVideoNode] = useState<HTMLVideoElement | null>(null)
+  const videoRefCallback = useCallback((node: HTMLVideoElement | null) => {
+    setVideoNode(node)
+  }, [])
+
   useEffect(() => {
-    if (!open) return
+    if (!open || !videoNode) return
+    const video = videoNode
     let cancelled = false
     setError(null)
     setStarting(true)
 
     ;(async () => {
       try {
-        const video = videoRef.current
-        if (!video) throw new Error("no-video-element")
-
         if (typeof window === "undefined" || !window.isSecureContext) {
           throw Object.assign(new Error("Contexto no seguro"), { name: "SecurityError" })
         }
@@ -81,7 +89,7 @@ export function BarcodeScanner({
             audio: false,
             video: { facingMode: { ideal: "environment" } },
           })
-        } catch (err) {
+        } catch {
           // Si falló por pedir específicamente la trasera, reintentamos sin
           // esa restricción (algunas notebooks/webcams no tienen "environment").
           stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true })
@@ -133,7 +141,7 @@ export function BarcodeScanner({
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
     }
-  }, [open, onDetected, onOpenChange])
+  }, [open, videoNode, onDetected, onOpenChange])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -142,7 +150,7 @@ export function BarcodeScanner({
           <DialogTitle>Escanear código de barras</DialogTitle>
         </DialogHeader>
         <div className="relative aspect-square bg-black">
-          <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover" />
+          <video ref={videoRefCallback} autoPlay muted playsInline className="h-full w-full object-cover" />
           {starting && !error && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white">
               <Loader2 className="h-6 w-6 animate-spin" />
